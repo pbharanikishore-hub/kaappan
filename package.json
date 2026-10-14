@@ -1,0 +1,26 @@
+{
+  "name": "kaappan-emergency-safety-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KAAPPAN emergency safety web app with Node.js, Express and MySQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.29.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.12.0",
+    "twilio": "^5.4.0"
+  },
+  "overrides": {
+    "mysql2": "$mysql2"
+  }
+}

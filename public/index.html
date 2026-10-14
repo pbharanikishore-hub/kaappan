@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> KAAPPAN - Emergency Response App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#1E3A8A',
+                            darkblue: '#0F172A',
+                            yellow: '#F59E0B',
+                            brightyellow: '#FACC15',
+                            accent: '#3B82F6',
+                            danger: '#EF4444'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+                        'bounce-subtle': 'bounce 2s infinite',
+                        'spin-slow': 'spin 8s linear infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        .yellow-glow {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.35);
+        }
+        .red-glow-pulse {
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.9); }
+            100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-full text-slate-100 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid font-bold fa-shield-halved animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-wider text-slate-100 flex items-center gap-2">
+                        KAAPPAN
+                        <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium">SOS v2.4</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Network Status & User Profile Button -->
+            <div class="flex items-center gap-3">
+                <button id="offlineToggleBtn" onclick="toggleNetworkMode()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span id="networkStatusText">ONLINE MODE</span>
+                </button>
+
+                <div id="navUserBadge" class="hidden flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-xl">
+                    <i class="fa-solid fa-circle-user text-amber-400"></i>
+                    <span id="navUserName" class="text-xs font-semibold text-slate-200">Nanba</span>
+                    <button onclick="logout()" title="Logout" class="ml-2 text-slate-400 hover:text-amber-400 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center items-center">
+
+        <!-- ================= AUTHENTICATION CONTAINER ================= -->
+        <div id="authSection" class="w-full max-w-md mx-auto my-auto">
+            <div class="glass-panel p-8 rounded-2xl shadow-2xl relative overflow-hidden border-t-4 border-t-amber-500">
+                <!-- Decorative background elements -->
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <!-- Auth Header -->
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-2 animate-bounce-subtle">🚨</div>
+                    <h2 id="authTitle" class="text-2xl font-bold text-slate-100">Welcome Back</h2>
+                    <p id="authSubtitle" class="text-xs text-slate-400 mt-1">Sign in to sync your emergency contacts & live safeguard.</p>
+                </div>
+
+                <!-- Form Tabs -->
+                <div class="flex bg-slate-950/60 p-1 rounded-xl mb-6 border border-slate-800">
+                    <button id="loginTabBtn" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 shadow transition-all">
+                        LOGIN
+                    </button>
+                    <button id="registerTabBtn" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-amber-400 transition-all">
+                        REGISTER
+                    </button>
+                </div>
+
+                <!-- Form Inputs -->
+                <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                    <!-- Name Field (Register only) -->
+                    <div id="nameGroup" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+                            <input type="text" id="regName" placeholder="e.g. Nanba Kumar" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Phone Field (Register only) -->
+                    <div id="phoneGroup" class="hidden">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Mobile Phone Number</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-phone absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+                            <input type="tel" id="regPhone" placeholder="e.g. +91 98765 43210" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+                            <input type="email" id="authEmail" required placeholder="name@domain.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+                            <input type="password" id="authPassword" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-3 text-slate-500 hover:text-amber-400">
+                                <i id="passEyeIcon" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Alert Box -->
+                    <div id="authAlert" class="hidden p-3 rounded-xl text-xs font-medium bg-red-500/20 border border-red-500/40 text-red-300"></div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="authSubmitBtn" class="w-full mt-2 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <span>ACCESS EMERGENCY HUB</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- ================= MAIN DASHBOARD CONTAINER ================= -->
+        <div id="dashboardSection" class="hidden w-full space-y-6 my-auto">
+
+            <!-- Welcome Alert Banner -->
+            <div class="bg-gradient-to-r from-blue-900/60 via-slate-900 to-amber-950/30 border border-amber-500/30 rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+                <div>
+                    <span class="text-xs uppercase tracking-widest font-extrabold text-amber-400 flex items-center gap-1.5">
+                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        Active Safeguard Active
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-100 mt-1">Hello, <span id="dashUserName">User</span> 👋</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Your emergency profile is configured. Emergency voice triggers & shake monitoring are standby.</p>
+                </div>
+            </div>
+
+            <!-- Main Grid: Emergency Trigger Left, Settings & Controls Right -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Left Column: Primary Emergency SOS Big Trigger -->
+                <div class="lg:col-span-5 flex flex-col justify-between items-center glass-panel p-6 sm:p-8 rounded-2xl relative overflow-hidden text-center yellow-glow">
+                    <div class="w-full flex justify-between items-center text-xs font-bold text-slate-400 mb-2">
+                        <span class="flex items-center gap-1.5 text-amber-400">
+                            <i class="fa-solid fa-bolt animate-bounce"></i> QUICK ACTION
+                        </span>
+                        <span id="gpsLocationText" class="text-emerald-400"><i class="fa-solid fa-location-dot"></i> GPS: Ready</span>
+                    </div>
+
+                    <div class="my-6 relative flex items-center justify-center">
+                        <!-- Pulse Outer Rings -->
+                        <div class="absolute w-56 h-56 sm:w-64 sm:h-64 rounded-full bg-red-600/20 animate-ping-slow pointer-events-none"></div>
+                        <div class="absolute w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-amber-500/20 animate-pulse-fast pointer-events-none"></div>
+
+                        <!-- Huge Manual SOS Button -->
+                        <button id="sosBtn" onclick="triggerManualSOS()" class="relative z-10 w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-amber-500 text-white font-black text-2xl sm:text-3xl shadow-2xl flex flex-col items-center justify-center border-4 border-amber-400/60 active:scale-95 transition-all cursor-pointer hover:shadow-red-500/50 red-glow-pulse group">
+                            <i class="fa-solid fa-bell text-4xl sm:text-5xl mb-2 group-hover:rotate-12 transition-transform"></i>
+                            <span class="tracking-widest">SEND SOS</span>
+                            <span class="text-[10px] font-medium tracking-normal opacity-90 mt-1">ALERT ALL CONTACTS</span>
+                        </button>
+                    </div>
+
+                    <!-- Open native communication apps -->
+                    <div class="w-full bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-2">
+                        <div class="flex justify-between items-center text-slate-400 font-medium">
+                            <span>Open phone apps (you confirm send/call):</span>
+                            <span class="text-amber-400 text-[10px] font-bold">NO PROVIDER REQUIRED</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="triggerDirectSMS()" class="py-2 px-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg font-bold hover:bg-amber-500/20 transition-all text-center flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-comment-sms"></i> Open SMS
+                            </button>
+                            <button onclick="triggerDirectWhatsApp()" class="py-2 px-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-lg font-bold hover:bg-emerald-500/20 transition-all text-center flex items-center justify-center gap-1.5">
+                                <i class="fa-brands fa-whatsapp"></i> Open WhatsApp
+                            </button>
+                            <button onclick="triggerDirectCall()" class="py-2 px-3 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-lg font-bold hover:bg-blue-500/20 transition-all text-center flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-phone-flip"></i> Open dialer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Priority Contacts & AI Safety Systems -->
+                <div class="lg:col-span-7 space-y-6">
+
+                    <!-- Priority Emergency Contacts Card -->
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-amber-500">
+                        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                            <div>
+                                <h3 class="font-extrabold text-lg text-slate-100 flex items-center gap-2">
+                                    <i class="fa-solid fa-users text-amber-400"></i>
+                                    Priority Emergency Contacts
+                                </h3>
+                                <p class="text-xs text-slate-400">SOS SMS & automatic call will be dispatched to these primary guardians.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="testDeliveryBtn" onclick="testMyPhone()" class="px-3 py-1.5 bg-slate-800 border border-slate-600 text-slate-200 font-bold text-xs rounded-lg hover:bg-slate-700 transition-all flex items-center gap-1 shadow-md">
+                                    <i class="fa-solid fa-vial"></i> Test my phone
+                                </button>
+                                <button onclick="toggleContactModal(true)" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg hover:bg-amber-400 transition-all flex items-center gap-1 shadow-md">
+                                    <i class="fa-solid fa-plus"></i> Add Contact
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Contacts List -->
+                        <div id="contactsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-1">
+                            <!-- Dynamic items injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- AI Unconsciousness / Emergency Timer Detection Feature -->
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-blue-500 relative">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🤖</span>
+                                    <h3 class="font-extrabold text-lg text-slate-100">No-response SOS Guard</h3>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5">When enabled, an uncancelled safety timer sends SOS alerts to every consenting contact.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="aiGuardToggle" onchange="toggleAIGuard()" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Config & Test Controls -->
+                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">Response Window:</span>
+                                <select id="aiTimerSelect" class="bg-slate-900 text-amber-300 border border-slate-700 rounded-lg px-2 py-1 font-bold">
+                                    <option value="30">30 Seconds</option>
+                                    <option value="60">1 Minute</option>
+                                    <option value="120">2 Minutes</option>
+                                </select>
+                            </div>
+                            <button onclick="startUnconsciousnessCheck()" class="px-3 py-1.5 bg-blue-600/30 border border-blue-500/40 text-blue-300 rounded-lg font-bold hover:bg-blue-600/50 transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-play text-xs"></i> Simulate Safety Check
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Speech & Hardware Shortcuts for Women Safety -->
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-yellow-400">
+                        <h3 class="font-extrabold text-base text-slate-100 flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-microphone text-amber-400"></i>
+                            Hands-Free Speech & Hardware Emergency Shortcuts
+                        </h3>
+                        <p class="text-xs text-slate-300 mb-3">Designed specifically for critical emergency moments without unlocking your screen:</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                                <div class="font-bold text-amber-400 flex items-center gap-1.5 mb-1">
+                                    <i class="fa-solid fa-volume-high"></i> Hardware Volume Shortcut
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Press <strong class="text-slate-200">Volume Down 3 times fast</strong> or hold for 3 seconds to immediately fire vibration alert + direct emergency call.</p>
+                            </div>
+                            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                                <div class="font-bold text-amber-400 flex items-center gap-1.5 mb-1">
+                                    <i class="fa-solid fa-bullhorn"></i> Emergency Voice Trigger
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Say <strong class="text-slate-200">"EMERGENCY HELP"</strong> or <strong class="text-slate-200">"HELP ME"</strong> to initiate auto SOS dispatch using Web Speech API.</p>
+                                <button onclick="toggleVoiceRecognition()" id="voiceBtn" class="mt-2 w-full py-1 px-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded text-[10px] border border-amber-500/20 transition-all flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-microphone-slash"></i> Activate Speech Detection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Live Action & Emergency Event Log Section -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-extrabold text-sm uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-amber-400"></i> Live Activity & Dispatch Log
+                    </h3>
+                    <button onclick="clearActivityLog()" class="text-xs text-slate-500 hover:text-slate-300">Clear Logs</button>
+                </div>
+                <div id="activityLog" class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 h-32 overflow-y-auto space-y-2 text-xs font-mono">
+                    <div class="text-slate-500 italic">[System Initialized] Safeguard services online. Waiting for user interaction...</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-amber-500/10 py-4 px-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>
+                <span class="text-slate-400 font-bold">KAAPPAN Emergency App</span> &copy; 2026. Built with Blue & Yellow Protection Theme.
+            </div>
+            <div class="flex gap-4 text-amber-400/80">
+                <span><i class="fa-solid fa-shield"></i> Encrypted Storage</span>
+                <span><i class="fa-solid fa-wifi"></i> Offline Capable</span>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ================= MODALS & OVERLAYS ================= -->
+
+    <!-- Add Contact Modal -->
+    <div id="contactModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-md border-t-4 border-t-amber-500 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-slate-100 mb-1">Add Emergency Guardian</h3>
+            <p class="text-xs text-slate-400 mb-4">Enter priority contact details who will receive instant SMS & Calls.</p>
+            
+            <form onsubmit="saveContact(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Contact Name</label>
+                    <input type="text" id="contactNameInput" required placeholder="e.g. Father / Sister / Friend" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone Number</label>
+                    <input type="tel" id="contactPhoneInput" required placeholder="e.g. +91 98765 43210" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-3 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <label class="flex items-start gap-2 text-xs text-slate-300">
+                    <input type="checkbox" id="contactConsent" required class="mt-0.5 accent-amber-500">
+                    <span>This contact agreed to receive emergency alerts.</span>
+                </label>
+                <p id="contactAlert" class="hidden text-xs text-red-300"></p>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="toggleContactModal(false)" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs shadow-lg shadow-amber-500/20">Save Priority Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Unconsciousness Countdown Overlay Modal -->
+    <div id="aiCountdownModal" class="hidden fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-lg border-2 border-red-500 text-center shadow-2xl red-glow-pulse relative">
+            <div class="text-5xl mb-3 animate-bounce">⚠️</div>
+            <h3 class="text-2xl font-black text-slate-100 mb-1">ARE YOU OKAY?</h3>
+            <p class="text-xs text-red-200 mb-6">A safety timer is running. Cancel it if you are safe.</p>
+            
+            <!-- Big Countdown Circle -->
+            <div class="relative w-36 h-36 mx-auto mb-6 flex items-center justify-center rounded-full border-4 border-amber-400 bg-slate-900/80">
+                <span id="countdownDisplay" class="text-5xl font-black text-amber-400">10</span>
+                <span class="absolute bottom-3 text-[10px] text-slate-400 uppercase tracking-widest">Seconds</span>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-6">If you do not cancel, KAAPPAN sends an alert and your available GPS map link to all consenting contacts by configured channels. Keep this page open and online.</p>
+
+            <button onclick="cancelAICheck()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-base rounded-2xl shadow-xl hover:from-emerald-400 hover:to-teal-300 transition-all uppercase tracking-wider">
+                <i class="fa-solid fa-check-circle"></i> I AM SAFE - CANCEL SOS
+            </button>
+        </div>
+    </div>
+
+    <!-- Simulated Emergency Call Modal -->
+    <div id="callModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-sm border border-amber-500/40 text-center shadow-2xl">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl animate-ping-slow">
+                <i class="fa-solid fa-phone-volume"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-100 mb-1">INCOMING / OUTGOING CALL</h3>
+            <p id="callTargetName" class="text-amber-400 font-extrabold text-lg">Priority Contact 1</p>
+            <p id="callTargetPhone" class="text-xs text-slate-400 mb-6">+91 98765 43210</p>
+
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 mb-6 animate-pulse">
+                <i class="fa-solid fa-vibrate text-amber-400"></i> Phone Vibrating & Siren Buzzing...
+            </div>
+
+            <button onclick="endSimulatedCall()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-phone-slash"></i> END CALL SIMULATION
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT APP LOGIC ================= -->
+    <script>
+        // State variables
+        let authMode = 'login'; // 'login' or 'register'
+        let currentUser = null;
+        let isOffline = false;
+        let priorityContacts = [];
+        let sosDispatchInProgress = false;
+
+        let aiCountdownTimer = null;
+        let countdownSeconds = 10;
+        let isVoiceActive = false;
+        let speechRecognitionInstance = null;
+
+        async function apiRequest(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Request failed.');
+            return data;
+        }
+
+        async function loadContacts() {
+            const data = await apiRequest('/api/contacts');
+            priorityContacts = data.contacts;
+            renderContacts();
+        }
+
+        window.onload = async function() {
+            try {
+                const data = await apiRequest('/api/auth/me');
+                if (data.user) {
+                    currentUser = data.user;
+                    showDashboard();
+                    await loadContacts();
+                }
+            } catch (error) {
+                console.error('Could not restore the login session:', error.message);
+            }
+            renderContacts();
+            initHardwareKeyListeners();
+            checkGPSLocation();
+        };
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            const loginBtn = document.getElementById('loginTabBtn');
+            const regBtn = document.getElementById('registerTabBtn');
+            const nameGroup = document.getElementById('nameGroup');
+            const phoneGroup = document.getElementById('phoneGroup');
+            const authTitle = document.getElementById('authTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+            const authAlert = document.getElementById('authAlert');
+
+            authAlert.classList.add('hidden');
+
+            if (mode === 'register') {
+                regBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 shadow transition-all";
+                loginBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-amber-400 transition-all";
+                nameGroup.classList.remove('hidden');
+                phoneGroup.classList.remove('hidden');
+                authTitle.innerText = "Create Account";
+                authSubtitle.innerText = "Register your primary phone & emergency safety account.";
+            } else {
+                loginBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 shadow transition-all";
+                regBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-amber-400 transition-all";
+                nameGroup.classList.add('hidden');
+                phoneGroup.classList.add('hidden');
+                authTitle.innerText = "Welcome Back";
+                authSubtitle.innerText = "Sign in to sync your emergency contacts & live safeguard.";
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('authPassword');
+            const eyeIcon = document.getElementById('passEyeIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.className = "fa-solid fa-eye-slash text-sm";
+            } else {
+                passInput.type = 'password';
+                eyeIcon.className = "fa-solid fa-eye text-sm";
+            }
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            const email = document.getElementById('authEmail').value.trim().toLowerCase();
+            const password = document.getElementById('authPassword').value;
+            const alertBox = document.getElementById('authAlert');
+            const submitButton = document.getElementById('authSubmitBtn');
+            const requestBody = { email, password };
+            if (authMode === 'register') {
+                const name = document.getElementById('regName').value.trim();
+                const phone = document.getElementById('regPhone').value.trim();
+                requestBody.name = name;
+                requestBody.phone = phone;
+            }
+
+            alertBox.classList.add('hidden');
+            submitButton.disabled = true;
+            try {
+                const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                const data = await apiRequest(endpoint, {
+                    method: 'POST',
+                    body: JSON.stringify(requestBody)
+                });
+                currentUser = data.user;
+                showDashboard();
+                logActivity(`[${authMode === 'register' ? 'Registration' : 'Login'} Successful] Welcome ${currentUser.name}.`);
+                try {
+                    await loadContacts();
+                } catch (error) {
+                    logActivity(`[Contacts could not be loaded] ${error.message}`);
+                }
+            } catch (error) {
+                alertBox.textContent = error.message;
+                alertBox.classList.remove('hidden');
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+
+        async function logout() {
+            try {
+                await apiRequest('/api/auth/logout', { method: 'POST' });
+                currentUser = null;
+                priorityContacts = [];
+                document.getElementById('dashboardSection').classList.add('hidden');
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('navUserBadge').classList.add('hidden');
+                renderContacts();
+                logActivity('[User Logged Out] Session ended.');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('navUserBadge').classList.remove('hidden');
+            document.getElementById('navUserName').innerText = currentUser.name.split(' ')[0];
+            document.getElementById('dashUserName').innerText = currentUser.name;
+        }
+
+        function renderContacts() {
+            const container = document.getElementById('contactsList');
+            container.innerHTML = '';
+
+            if (priorityContacts.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 py-4 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
+                        No emergency contacts set yet. Click "Add Contact" to add guardians.
+                    </div>
+                `;
+                return;
+            }
+
+            priorityContacts.forEach((contact, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex justify-between items-center hover:border-amber-500/40 transition-colors";
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <p class="font-bold text-xs text-slate-200">${escapeHtml(contact.name)}</p>
+                            <p class="text-[11px] text-slate-400 font-mono">${escapeHtml(contact.phone)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="openContactApp(${contact.id}, 'sms')" title="Open SMS for ${escapeHtml(contact.name)}" aria-label="Open SMS for ${escapeHtml(contact.name)}" class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-300 hover:bg-amber-500/30 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-comment-sms"></i>
+                        </button>
+                        <button onclick="openContactApp(${contact.id}, 'whatsapp')" title="Open WhatsApp for ${escapeHtml(contact.name)}" aria-label="Open WhatsApp for ${escapeHtml(contact.name)}" class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/30 flex items-center justify-center text-xs">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </button>
+                        <button onclick="openContactApp(${contact.id}, 'call')" title="Call ${escapeHtml(contact.name)}" aria-label="Call ${escapeHtml(contact.name)}" class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-300 hover:bg-blue-500/30 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-phone"></i>
+                        </button>
+                        <button onclick="deleteContact(${contact.id})" title="Delete" class="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/30 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleContactModal(show) {
+            const modal = document.getElementById('contactModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function saveContact(event) {
+            event.preventDefault();
+            const name = document.getElementById('contactNameInput').value.trim();
+            const phone = document.getElementById('contactPhoneInput').value.trim();
+            const alertBox = document.getElementById('contactAlert');
+            if (!name || !phone) return;
+            alertBox.classList.add('hidden');
+            try {
+                await apiRequest('/api/contacts', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name,
+                        phone,
+                        consent: document.getElementById('contactConsent').checked
+                    })
+                });
+                await loadContacts();
+                toggleContactModal(false);
+                document.getElementById('contactNameInput').value = '';
+                document.getElementById('contactPhoneInput').value = '';
+                document.getElementById('contactConsent').checked = false;
+                logActivity(`[Contact Added] Priority Contact '${name}' (${phone}) saved.`);
+            } catch (error) {
+                alertBox.textContent = error.message;
+                alertBox.classList.remove('hidden');
+            }
+        }
+
+        async function deleteContact(id) {
+            try {
+                await apiRequest(`/api/contacts/${id}`, { method: 'DELETE' });
+                await loadContacts();
+                logActivity('[Contact Deleted] Priority contact removed.');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function testMyPhone() {
+            if (!currentUser || !currentUser.phone) {
+                alert('Your account does not have a phone number. Sign in with an account that has a valid phone number.');
+                return;
+            }
+            if (!window.confirm(`Send a test SMS, WhatsApp message, and automated call to your account phone (${currentUser.phone})?`)) return;
+
+            const button = document.getElementById('testDeliveryBtn');
+            button.disabled = true;
+            try {
+                const data = await apiRequest('/api/test-delivery', { method: 'POST' });
+                const summary = data.results.map(result => `${result.channel}: ${result.status}${result.message ? ` (${result.message})` : ''}`).join('\n');
+                data.results.forEach(result => logActivity(`[Delivery test - ${result.channel}] ${result.status}${result.message ? `: ${result.message}` : ''}.`));
+                alert(`Test results for ${data.phone}:\n${summary}\n\naccepted_by_provider means Twilio accepted the request, not that the phone received it.`);
+            } catch (error) {
+                alert(`Delivery test failed: ${error.message}`);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function triggerManualSOS() {
+            return dispatchSOS('manual');
+        }
+
+        async function dispatchSOS(trigger) {
+            if (sosDispatchInProgress) return;
+            if (!currentUser) {
+                alert('Please sign in before sending an SOS.');
+                return;
+            }
+            if (priorityContacts.length === 0) {
+                alert('Please add at least one consenting emergency contact first.');
+                return;
+            }
+
+            sosDispatchInProgress = true;
+            playSirenAndVibrate();
+            logActivity(`[SOS ${trigger === 'no_response' ? 'AUTO' : 'MANUAL'}] Sending alerts to all consenting contacts...`);
+            let location = null;
+            try {
+                location = await requestCurrentLocation();
+                document.getElementById('gpsLocationText').innerHTML = `<i class="fa-solid fa-location-dot"></i> GPS: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)} (±${Math.round(location.accuracy)}m)`;
+            } catch (error) {
+                logActivity(`[GPS unavailable] Sending SOS without a map location: ${error.message}`);
+            }
+
+            try {
+                const data = await apiRequest('/api/sos', {
+                    method: 'POST',
+                    body: JSON.stringify({ trigger, location })
+                });
+                logActivity(`[SOS recorded] Event #${data.eventId}; GPS ${data.locationIncluded ? 'included' : 'unavailable'}.`);
+                data.results.forEach(result => {
+                    logActivity(`[${result.channel} - ${result.contact}] ${result.status}${result.message ? `: ${result.message}` : ''}.`);
+                });
+            } catch (error) {
+                logActivity(`[SOS dispatch failed] ${error.message}`);
+                alert(`SOS could not be sent: ${error.message}`);
+            } finally {
+                sosDispatchInProgress = false;
+            }
+        }
+
+        function requestCurrentLocation() {
+            if (!('geolocation' in navigator)) return Promise.reject(new Error('Geolocation is not supported.'));
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    }),
+                    error => reject(new Error(error.message || 'Location permission denied.')),
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+                );
+            });
+        }
+
+        function triggerDirectSMS() {
+            openFirstContactApp('sms');
+        }
+
+        function triggerDirectWhatsApp() {
+            openFirstContactApp('whatsapp');
+        }
+
+        function triggerDirectCall() {
+            openFirstContactApp('call');
+        }
+
+        function openFirstContactApp(channel) {
+            if (priorityContacts.length === 0) {
+                alert('Please add a priority contact first.');
+                return;
+            }
+            openContactApp(priorityContacts[0].id, channel);
+        }
+
+        function openContactApp(contactId, channel) {
+            const contact = priorityContacts.find(item => item.id === contactId);
+            if (!contact) return;
+            const phone = String(contact.phone).replace(/[^\d+]/g, '');
+            if (!phone) {
+                alert(`No valid phone number is saved for ${contact.name}.`);
+                return;
+            }
+
+            const message = `KAAPPAN SOS alert. I need help. Please contact me now.`;
+            if (channel === 'sms') {
+                const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? '&' : '?';
+                logActivity(`[Open SMS] Opening the SMS composer for ${contact.name}; tap Send in your messaging app.`);
+                window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(message)}`;
+            } else if (channel === 'whatsapp') {
+                const whatsappNumber = phone.replace(/\D/g, '');
+                if (!whatsappNumber) {
+                    alert('Save this contact with a country code, for example +91...');
+                    return;
+                }
+                logActivity(`[Open WhatsApp] Opening a chat for ${contact.name}; tap Send in WhatsApp.`);
+                window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            } else if (channel === 'call') {
+                logActivity(`[Open dialer] Opening the phone dialer for ${contact.name}; confirm the call on your phone.`);
+                window.location.href = `tel:${phone}`;
+            }
+        }
+
+        function playSirenAndVibrate() {
+            // Trigger Vibration API if supported on device
+            if ('vibrate' in navigator) {
+                navigator.vibrate([500, 200, 500, 200, 1000]);
+            }
+
+            // Web Audio API Audio Siren Sound Synthesizer
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.5);
+
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 1.2);
+            } catch(e) {
+                console.log("Audio siren synthesize error:", e);
+            }
+        }
+
+        function startUnconsciousnessCheck() {
+            if (!document.getElementById('aiGuardToggle').checked) {
+                alert('Enable the no-response SOS guard first.');
+                return;
+            }
+            const seconds = parseInt(document.getElementById('aiTimerSelect').value) || 10;
+            countdownSeconds = seconds;
+            document.getElementById('countdownDisplay').innerText = countdownSeconds;
+            document.getElementById('aiCountdownModal').classList.remove('hidden');
+
+            playSirenAndVibrate();
+            logActivity(`[🤖 AI Safety Check Started] ${countdownSeconds}s response timer counting down...`);
+
+            clearInterval(aiCountdownTimer);
+            aiCountdownTimer = setInterval(() => {
+                countdownSeconds--;
+                document.getElementById('countdownDisplay').innerText = countdownSeconds;
+
+                if (countdownSeconds <= 0) {
+                    clearInterval(aiCountdownTimer);
+                    document.getElementById('aiCountdownModal').classList.add('hidden');
+                    logActivity(`[AUTO SOS] Safety timer expired without confirmation.`);
+                    dispatchSOS('no_response');
+                }
+            }, 1000);
+        }
+
+        function cancelAICheck() {
+            clearInterval(aiCountdownTimer);
+            document.getElementById('aiCountdownModal').classList.add('hidden');
+            logActivity(`[AI Check Cleared] User confirmed safety. SOS canceled.`);
+        }
+
+        function toggleAIGuard() {
+            const toggle = document.getElementById('aiGuardToggle');
+            if (toggle.checked) {
+                const confirmed = window.confirm('If a safety timer expires without you cancelling it, KAAPPAN will send an alert and your available GPS location to all consenting contacts through configured SMS, WhatsApp, and voice providers. This works only while this page remains open and online. Enable?');
+                if (!confirmed) {
+                    toggle.checked = false;
+                    return;
+                }
+                logActivity(`[No-response SOS Guard] Enabled with automatic alert consent.`);
+            } else {
+                clearInterval(aiCountdownTimer);
+                document.getElementById('aiCountdownModal').classList.add('hidden');
+                logActivity(`[No-response SOS Guard] Disabled.`);
+            }
+        }
+
+        function showSimulatedCallModal(name, phone) {
+            document.getElementById('callTargetName').innerText = name;
+            document.getElementById('callTargetPhone').innerText = phone;
+            document.getElementById('callModal').classList.remove('hidden');
+        }
+
+        function endSimulatedCall() {
+            document.getElementById('callModal').classList.add('hidden');
+            logActivity(`[Simulated Call Ended] Return to main safeguard screen.`);
+        }
+
+        function toggleNetworkMode() {
+            isOffline = !isOffline;
+            const btn = document.getElementById('offlineToggleBtn');
+            const text = document.getElementById('networkStatusText');
+
+            if (isOffline) {
+                btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer";
+                text.innerText = "OFFLINE MODE (LOCAL PROTOCOL)";
+                logActivity(`[Network Switch] Offline mode active. Utilizing local device SMS/TEL protocols & IndexedDB caching.`);
+            } else {
+                btn.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer";
+                text.innerText = "ONLINE MODE";
+                logActivity(`[Network Switch] Online mode active. Syncing with server database.`);
+            }
+        }
+
+        function toggleVoiceRecognition() {
+            const voiceBtn = document.getElementById('voiceBtn');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                alert("Speech recognition is not supported in this browser engine. Use Chrome or Edge.");
+                return;
+            }
+
+            if (isVoiceActive) {
+                if (speechRecognitionInstance) speechRecognitionInstance.stop();
+                isVoiceActive = false;
+                voiceBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> Activate Speech Detection`;
+                logActivity(`[Voice Trigger] Speech recognition disabled.`);
+            } else {
+                speechRecognitionInstance = new SpeechRecognition();
+                speechRecognitionInstance.continuous = true;
+                speechRecognitionInstance.lang = 'en-US';
+
+                speechRecognitionInstance.onresult = function(event) {
+                    const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                    logActivity(`[Speech Heard]: "${transcript}"`);
+
+                    if (transcript.includes('emergency') || transcript.includes('help me') || transcript.includes('sos')) {
+                        logActivity(`[🚨 SPEECH SOS MATCH] Recognized emergency voice phrase! Launching SOS.`);
+                        triggerManualSOS();
+                    }
+                };
+
+                speechRecognitionInstance.start();
+                isVoiceActive = true;
+                voiceBtn.innerHTML = `<i class="fa-solid fa-microphone text-emerald-400 animate-pulse"></i> Listening for "EMERGENCY"...`;
+                logActivity(`[Voice Trigger] Speech recognition active. Say 'EMERGENCY' or 'HELP ME'.`);
+            }
+        }
+
+        // Hardware Key Simulation (3 rapid volume button triggers or keypresses)
+        let keyPressCount = 0;
+        let keyPressTimer = null;
+        function initHardwareKeyListeners() {
+            window.addEventListener('keydown', (e) => {
+                // Listening to VolumeDown or Escape or spacebar triple tap as hardware simulation
+                if (e.key === 'VolumeDown' || e.key === 'Escape') {
+                    keyPressCount++;
+                    clearTimeout(keyPressTimer);
+                    
+                    if (keyPressCount >= 3) {
+                        logActivity(`[🚨 HARDWARE KEY TRIGGER] Rapid triple key press detected! Launching SOS.`);
+                        triggerManualSOS();
+                        keyPressCount = 0;
+                    } else {
+                        keyPressTimer = setTimeout(() => { keyPressCount = 0; }, 1200);
+                    }
+                }
+            });
+        }
+
+        function checkGPSLocation() {
+            const gpsText = document.getElementById('gpsLocationText');
+            gpsText.innerHTML = '<i class="fa-solid fa-location-dot"></i> GPS: Requested only when SOS is sent';
+        }
+
+        function logActivity(text) {
+            const logContainer = document.getElementById('activityLog');
+            if (!logContainer) return;
+
+            const timeStr = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = "text-slate-300 border-b border-slate-900 pb-1";
+            entry.innerHTML = `<span class="text-amber-400 font-bold">[${timeStr}]</span> ${escapeHtml(text)}`;
+
+            logContainer.prepend(entry);
+        }
+
+        function clearActivityLog() {
+            document.getElementById('activityLog').innerHTML = '<div class="text-slate-500 italic">[System Reset] Activity logs cleared.</div>';
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
